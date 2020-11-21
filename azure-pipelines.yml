@@ -1,0 +1,40 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Instalar .NET 5'
+  inputs:
+    packageType: 'sdk'
+    version: '5.0.100'
+- script: dotnet --list-sdks
+  displayName: 'Listar versões disponíveis do .NET'
+- task: DotNetCoreCLI@2
+  displayName: 'Executar testes da API de Finanças'
+  inputs:
+    command: 'test'
+    projects: '**/APIFinancas.Testes.csproj'
+    testRunTitle: 'Testes da API de Finanças'
+- task: DotNetCoreCLI@2
+  displayName: 'Publish da API de Finanças'
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
+    workingDirectory: './APIFinancas/'
+- task: PublishBuildArtifacts@1
+  displayName: 'Geração de Artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'apifinancas-publish'
+    publishLocation: 'Container'
+- task: AzureRmWebAppDeployment@4
+  displayName: 'Publish de Web App no Azure App Service'
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'AZURE SUBSCRIPTION'
+    appType: 'webAppLinux'
+    WebAppName: 'groffefinancas'
+    packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
